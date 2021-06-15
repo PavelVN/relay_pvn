@@ -42,6 +42,7 @@ public:
   bool setOnState(uint8_t number, bool state);
   bool switchOn(uint8_t number);
   bool switchOff(uint8_t number);
+  bool invert(uint8_t number);
   bool getState(uint8_t number);
   bool pulseOn(uint8_t number);
   bool pulseOn(uint8_t number, uint32_t pulseWidth);
@@ -251,12 +252,24 @@ bool relay_pvn::switchOff(uint8_t number)
   return false;
 }
 
+bool relay_pvn::invert(uint8_t number)
+{
+  if (getState(number))
+  {
+    return switchOff(number);
+  }
+  else
+  {
+    return switchOn(number);
+  }
+}
+
 bool relay_pvn::getState(uint8_t number)
 {
   bool tmp{0};
   if (number < count)
   {
-    tmp = readPin(PIN[number]);
+    tmp = (onState[number] == readPin(PIN[number]));
   }
   return tmp;
 }
