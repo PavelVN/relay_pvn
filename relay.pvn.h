@@ -1,8 +1,9 @@
 #ifndef RELAY_PVN_H
 #define RELAY_PVN_H
 #include <Arduino.h>
+#ifdef PCF8575_LIB_VERSION
 #include "PCF8575.h"
-
+#endif
 
 #define EVERY_MS(x)                  \
   static uint32_t tmr = -(x);        \
@@ -23,8 +24,9 @@ private:
   void writePin(uint8_t pinNumber, uint8_t value);
   //void initPin(uint8_t pinNumber, uint8_t mode);
   bool readPin(uint8_t pinNumber);
-
+#ifdef PCF8575_LIB_VERSION
   PCF8575 *ext_pcf8575;
+#endif
   uint8_t type;
   enum relay_pin_type
   {
@@ -32,10 +34,11 @@ private:
     PCF8575_PIN
   };
 
-
 public:
   relay_pvn(const uint8_t relayCount, const uint8_t *RELAY_PIN_NUMBERS, const bool RELAY_ON = true);
+  #ifdef PCF8575_LIB_VERSION
   relay_pvn(const uint8_t relayCount, const uint8_t *RELAY_PIN_NUMBERS, PCF8575 &ext, const bool RELAY_ON = true);
+  #endif
   ~relay_pvn();
   bool setPulseWidth(uint8_t number, uint32_t pulseWidth);
   uint32_t getPulseWidth(uint8_t number);
@@ -47,9 +50,9 @@ public:
   bool pulseOn(uint8_t number);
   bool pulseOn(uint8_t number, uint32_t pulseWidth);
   bool init();
-  bool init(bool * onState);
-  bool init(bool * onState, bool * startState);
-  bool init0(bool * startState);
+  bool init(bool *onState);
+  bool init(bool *onState, bool *startState);
+  bool init0(bool *startState);
   bool loop();
   bool loop(uint32_t millisLoop);
 };
@@ -57,9 +60,9 @@ public:
 relay_pvn::relay_pvn(uint8_t relayCount, const uint8_t *RELAY_PIN_NUMBERS, const bool RELAY_ON)
 {
   count = relayCount;
-  state = (bool*)malloc(count);
+  state = (bool *)malloc(count);
   PIN = new uint8_t[count];
-  onState = (bool*)malloc(count);
+  onState = (bool *)malloc(count);
   pulseWidth = new uint32_t[count];
   lastOn = new uint32_t[count];
   for (uint8_t i = 0; i < count; i++)
@@ -72,12 +75,13 @@ relay_pvn::relay_pvn(uint8_t relayCount, const uint8_t *RELAY_PIN_NUMBERS, const
   }
   type = PHYSICAL_PIN;
 };
+#ifdef PCF8575_LIB_VERSION
 relay_pvn::relay_pvn(const uint8_t relayCount, const uint8_t *RELAY_PIN_NUMBERS, PCF8575 &ext, const bool RELAY_ON)
 {
   count = relayCount;
-  state = (bool*)malloc(count);
+  state = (bool *)malloc(count);
   PIN = new uint8_t[count];
-  onState = (bool*)malloc(count);
+  onState = (bool *)malloc(count);
   pulseWidth = new uint32_t[count];
   lastOn = new uint32_t[count];
   for (uint8_t i = 0; i < count; i++)
@@ -91,7 +95,7 @@ relay_pvn::relay_pvn(const uint8_t relayCount, const uint8_t *RELAY_PIN_NUMBERS,
   this->ext_pcf8575 = &ext;
   type = PCF8575_PIN;
 };
-
+#endif
 relay_pvn::~relay_pvn()
 {
   count = 0;
@@ -165,6 +169,7 @@ bool relay_pvn::init()
       writePin(PIN[i], !onState[i]);
     }
   }
+#ifdef PCF8575_LIB_VERSION
   else if (type == PCF8575_PIN)
   {
     ext_pcf8575->begin();
@@ -173,6 +178,7 @@ bool relay_pvn::init()
       ext_pcf8575->write(PIN[i], !onState[i]);
     }
   }
+#endif
   else
   {
     return false;
@@ -183,7 +189,7 @@ bool relay_pvn::init()
 /*
 init with onState array
 */
-bool relay_pvn::init(bool * onState)
+bool relay_pvn::init(bool *onState)
 {
   for (uint8_t i = 0; i < count; i++)
   {
@@ -192,7 +198,7 @@ bool relay_pvn::init(bool * onState)
   return init();
 }
 
-bool relay_pvn::init(bool * onState, bool * startState)
+bool relay_pvn::init(bool *onState, bool *startState)
 {
   for (uint8_t i = 0; i < count; i++)
   {
@@ -201,7 +207,7 @@ bool relay_pvn::init(bool * onState, bool * startState)
   return init0(startState);
 }
 
-bool relay_pvn::init0(bool * startState)
+bool relay_pvn::init0(bool *startState)
 {
   if (type == PHYSICAL_PIN)
   {
@@ -215,6 +221,7 @@ bool relay_pvn::init0(bool * startState)
       writePin(PIN[i], startState[i] ? onState[i] : !onState[i]);
     }
   }
+#ifdef PCF8575_LIB_VERSION
   else if (type == PCF8575_PIN)
   {
     ext_pcf8575->begin();
@@ -223,6 +230,7 @@ bool relay_pvn::init0(bool * startState)
       ext_pcf8575->write(PIN[i], startState[i] ? onState[i] : !onState[i]);
     }
   }
+#endif
   else
   {
     return false;
@@ -305,12 +313,14 @@ void relay_pvn::writePin(uint8_t pinNumber, uint8_t value)
     Serial.println("phys writePin" + String(pinNumber) + " " + String(value));
     state[pinNumber] = value;
   }
+#ifdef PCF8575_LIB_VERSION
   else if (type == PCF8575_PIN)
   {
     ext_pcf8575->write(pinNumber, value);
     Serial.println("pcf8575 writePin" + String(pinNumber) + " " + String(value));
     state[pinNumber] = value;
   }
+#endif
 };
 /*
 void relay_pvn::initPin(uint8_t pinNumber, uint8_t mode)
@@ -325,11 +335,13 @@ bool relay_pvn::readPin(uint8_t pinNumber)
     state[pinNumber] = digitalRead(pinNumber);
     return state[pinNumber];
   }
+#ifdef PCF8575_LIB_VERSION
   else if (type == PCF8575_PIN)
   {
     state[pinNumber] = ext_pcf8575->read(pinNumber);
     return state[pinNumber];
   }
+#endif
   else
     return false;
 };
